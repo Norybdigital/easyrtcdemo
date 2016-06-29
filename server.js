@@ -1,15 +1,28 @@
 // Load required modules
-var http    = require("http");              // http server core module
+var fs = require('fs');
+var https    = require("https");              // http server core module
 var express = require("express");           // web framework external module
 var io      = require("socket.io");         // web socket external module
 var easyrtc = require("easyrtc");           // EasyRTC external module
+var app = express();
 
 // Setup and configure Express http server. Expect a subfolder called "static" to be the web root.
-var httpApp = express();
-httpApp.use(express.static(__dirname + "/static/"));
+//var httpApp = express();
+//httpApp.use(express.static(__dirname + "/static/"));
+
+app.use(express.static(__dirname + "/static/"));
 
 // Start Express http server on port 8080
-var webServer = http.createServer(httpApp).listen(8080);
+//var webServer = http.createServer(httpApp).listen(8080);
+
+app.get('/', function(req,res) {
+    res.send('hello');
+});
+
+var webServer = https.createServer({
+    key: fs.readFileSync('keys/key.pem', 'utf8'),
+    cert: fs.readFileSync('keys/server.crt', 'utf8')
+}, app).listen(8080);
 
 // Start Socket.io so it attaches itself to Express server
 var socketServer = io.listen(webServer, {"log level":1});
@@ -40,7 +53,7 @@ easyrtc.events.on("roomJoin", function(connectionObj, roomName, roomParameter, c
 
 
 // Start EasyRTC server
-var rtc = easyrtc.listen(httpApp, socketServer, null, function(err, rtcRef) {
+var rtc = easyrtc.listen(app, socketServer, null, function(err, rtcRef) {
     console.log("Initiated");
 
     rtcRef.events.on("roomCreate", function(appObj, creatorConnectionObj, roomName, roomOptions, callback) {
